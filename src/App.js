@@ -1,26 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useReducer } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import uuidv4 from 'uuid/v4';
-//import classNames from 'classnames';
 
 import defaultFiles from './utils/defaultFiles';
 import MenuBars from './components/MenuBars';
 import Search from './components/Search';
-import Folders from './components/FoldersPanel';
+import FoldersPanel from './components/FoldersPanel';
 import CreateList from './components/CreateList';
 import FunctionBar from './components/FunctionBar';
 import CreateItem from './components/CreateItem';
 import EntryPanel from './components/EntryPanel';
 
+const initState = {
+  files: defaultFiles,
+  searchKeyword: false,
+  selectedListID: '0-1',
+  foldersPanelCollapsed: false,
+};
+
+const appReducer = (state, action) => {
+  switch(action.type) {
+    case 'changeFiles':
+      console.log('changeFiles');
+      return {
+        ...state,
+        files: action.payload ? action.payload.files : state.files,
+      }
+    case 'search':
+      console.log(`search`);
+      return {
+        ...state,
+        searchKeyword: action.payload.value,
+      }
+    case 'selectList':
+      console.log('select list');
+      return {
+        ...state,
+        selectedListID: action.payload.id,
+      }
+    case 'collapseFolersPanel':
+      console.log('troggle collapse folder panel');
+      return {
+        ...state,
+        foldersPanelCollapsed: !state.foldersPanelCollapsed,
+      }
+    default: 
+        return state;
+  }
+};
+
 
 function App() {
 
-  const [ files, setFiles ] = useState(defaultFiles);
-  const [ searchKeyword, setSearchKeyword ] = useState(false);
-  const [ selectedListID, setSelectedListID ] = useState('0-1');
-  const [ foldersPanelCollapsed, setFoldersPanelCollapsed] = useState(false);
+  const [state, dispatch] = useReducer(appReducer, initState);
+
+  const { files, searchKeyword, selectedListID, foldersPanelCollapsed } = state;
 
   const allLists = files.reduce((acc, cur) => { //将所有条目整理出来，添加了folder和list的信息
     if (cur.type === 'folder'){
@@ -49,17 +85,16 @@ function App() {
   }).filter(list => list !== undefined);
 
   const toSearch = (value) => {
-    setSearchKeyword(value);
+    dispatch({ type: 'search', payload: { value: value} });
   };
 
   const closeSearch = () => {
-    setSearchKeyword(false);
+    dispatch({ type: 'search', payload: { value: false} });
   }
 
   const sortEntries = (sortby) => {
     if (sortby === 'content') {
       sortedList.content.sort((a, b) => a.content - b.content )
-      console.log(sortedList);
     }
     else if (sortby === 'createdAt') {
       sortedList.content.sort((a, b) => a.createdAt - b.createdAt )
@@ -86,11 +121,11 @@ function App() {
       newFiles.find((item) => item.id === selectedListID)
       .content.unshift(newEntry);
     }
-    setFiles(newFiles);
+    dispatch({ type: 'changeFiles', payload: { files: newFiles} });
   };
 
   const collapsePanel = (toCollapse) => {
-    setFoldersPanelCollapsed(toCollapse);
+    dispatch({ type: 'collapseFolersPanel'});
   }
 
   const completeEntry = (id) => {
@@ -103,7 +138,7 @@ function App() {
       const entry = list.entries.find( entry => id === entry.id );
       entry.completeAt = new Date().getTime();
     }
-
+    dispatch({type: 'changeFiles'});
   };
 
   const unCompleteEntry = (id) => {
@@ -116,6 +151,7 @@ function App() {
       const entry = list.entries.find( entry => id === entry.id );
       delete entry.completeAt;
     }
+    dispatch({type: 'changeFiles'});
   }
 
 /*   const createList = (title) => {
@@ -136,7 +172,7 @@ function App() {
       newFiles.find((item) => item.id === selectedListID)
       .title = title;
     }
-    setFiles(newFiles);
+    dispatch({ type: 'changeFiles', payload: { files: newFiles } });
   }
 
   const createList = (title) => {
@@ -149,7 +185,7 @@ function App() {
     }
     const newFiles = files;
     newFiles.push(newList);
-    setFiles(newFiles);
+    dispatch({ type: 'changeFiles', payload: { files: newFiles } });
   }
 
   const starEntry = (id) => {
@@ -202,6 +238,7 @@ function App() {
         searchResult.splice(searchedListIdx,1);
       }
     }
+    dispatch({type: 'changeFiles' });
   }
 
   return (
@@ -215,17 +252,16 @@ function App() {
             />
             <Search
               toShow={!foldersPanelCollapsed}
-              files={files}
               onSearch={toSearch}
               onCloseSearch={closeSearch}
             />
           </div>
-          <Folders
+          <FoldersPanel
             searchMode={!!searchKeyword}
             showAll={!foldersPanelCollapsed}
             files={files}
             onCloseSearch={closeSearch}
-            onSelectList={setSelectedListID}
+            onSelectList={(id) => dispatch({ type: 'selectList', payload: {id: id}})}
             onEditList={editList}
             onCollapsePanel={collapsePanel}
           />

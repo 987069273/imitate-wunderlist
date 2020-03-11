@@ -4,7 +4,7 @@ import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 import useKeyPress from '../hooks/useKeyPress';
 
-const Search = ({ toShow, files, onSearch, onCloseSearch }) => {
+const Search = ({ toShow, onSearch, onCloseSearch }) => {
     const [ isSearching, setIsSearching ] = useState(false);
     const [ value, setValue ] = useState('');
     const node = useRef(null);
@@ -25,6 +25,7 @@ const Search = ({ toShow, files, onSearch, onCloseSearch }) => {
     useEffect(() => {
         if(enterPressed && isSearching) {
             onSearch(value);
+            setIsSearching(false);
         }
         if(escPressed && isSearching) {
             exitSearching();

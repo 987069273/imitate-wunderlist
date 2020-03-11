@@ -29,6 +29,7 @@ const CreateItem = ({ onSubmit }) => {
     useEffect(() => {
         if (enterPressed && inputActive && value !== '') {
             onSubmit(value);
+            setInputActive(false);
             setValue('');
         }
         if (escPressed && inputActive) {

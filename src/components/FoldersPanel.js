@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useReducer }from 'react';
+import React, { useState, useEffect, useRef }from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faAngleDown, faAngleLeft, faEllipsisH, faEllipsisV, faPencilAlt, faListUl } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
@@ -53,6 +53,15 @@ const FoldersPanel = ({ searchMode, showAll, files, onCloseSearch, onSelectList,
             node.current.focus();
         }
     },[editStatus]);
+
+    useEffect(() => {
+        let file = files.find( file => file.id === listIDSelected );
+        file = file ? file : files.find( file => file.content.some( list => list.id === listIDSelected ));
+        if( file ) {
+            const listTitle =  file.title;
+            document.title = listTitle;
+        }
+    }, [ listIDSelected ]);
 
     return (
         <>
