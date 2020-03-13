@@ -12,36 +12,55 @@ import CreateList from './components/CreateList';
 import FunctionBar from './components/FunctionBar';
 import CreateItem from './components/CreateItem';
 import EntryPanel from './components/EntryPanel';
+import fileHelper from './utils/fileHelper';
+
+const { join } = window.require('path'); 
+const { remote } = window.require('electron');
+const Store = window.require('electron-store');
+
+const savedLocation = remote.app.getPath('documents');
+const fileStore = new Store({'name': 'Files Data'});
+
+const saveFilesToStore = (files) => {
+  fileStore.set('files', files);
+}
+
+const initFiles = fileStore.get('files') || [];
 
 const initState = {
-  files: defaultFiles,
+  files: initFiles,
   searchKeyword: false,
-  selectedListID: '0-1',
+  selectedListID: initFiles[0] ? (initFiles[0].type === 'folder' ? initFiles[0].content[0].id : initFiles[0].id) : false,
   foldersPanelCollapsed: false,
 };
+
+/* fileHelper.readFile(join(savedLocation, 'wunderlist.json')).then(value => 
+  {
+    const files = JSON.parse(value);
+    initState.files = files
+  }).catch( err =>
+    console.log('no such file')
+  ); */
+
 
 const appReducer = (state, action) => {
   switch(action.type) {
     case 'changeFiles':
-      console.log('changeFiles');
       return {
         ...state,
         files: action.payload ? action.payload.files : state.files,
       }
     case 'search':
-      console.log(`search`);
       return {
         ...state,
         searchKeyword: action.payload.value,
       }
     case 'selectList':
-      console.log('select list');
       return {
         ...state,
         selectedListID: action.payload.id,
       }
     case 'collapseFolersPanel':
-      console.log('troggle collapse folder panel');
       return {
         ...state,
         foldersPanelCollapsed: !state.foldersPanelCollapsed,
@@ -122,6 +141,7 @@ function App() {
       .content.unshift(newEntry);
     }
     dispatch({ type: 'changeFiles', payload: { files: newFiles} });
+    saveFilesToStore(newFiles);
   };
 
   const collapsePanel = (toCollapse) => {
@@ -139,6 +159,7 @@ function App() {
       entry.completeAt = new Date().getTime();
     }
     dispatch({type: 'changeFiles'});
+    saveFilesToStore(files);
   };
 
   const unCompleteEntry = (id) => {
@@ -152,6 +173,7 @@ function App() {
       delete entry.completeAt;
     }
     dispatch({type: 'changeFiles'});
+    saveFilesToStore(files);
   }
 
 /*   const createList = (title) => {
@@ -160,6 +182,13 @@ function App() {
       message: `create a list titled ${title}`,
     });
   }; */
+
+  const selectList = (id) => {
+    if (!!searchKeyword) {
+      closeSearch();
+    }
+    dispatch({ type: 'selectList', payload: {id: id} });
+  };
 
   const editList = (title) => {
     const newFiles = files;
@@ -173,6 +202,7 @@ function App() {
       .title = title;
     }
     dispatch({ type: 'changeFiles', payload: { files: newFiles } });
+    saveFilesToStore(newFiles);
   }
 
   const createList = (title) => {
@@ -186,6 +216,9 @@ function App() {
     const newFiles = files;
     newFiles.push(newList);
     dispatch({ type: 'changeFiles', payload: { files: newFiles } });
+    dispatch({ type: 'selectList', payload: { id: newList.id } })
+    console.log(state);
+    saveFilesToStore(newFiles);
   }
 
   const starEntry = (id) => {
@@ -197,6 +230,7 @@ function App() {
     else {
       sortedList.content.find((entry) => id === entry.id).starred = true;
     }
+    saveFilesToStore(files);
   }
 
   const unStarEntry = (id) => {
@@ -208,6 +242,7 @@ function App() {
     else {
       delete sortedList.content.find((entry) => id === entry.id).starred;
     }
+    saveFilesToStore(files);
   }
 
   const editEntry = (entryID, value) => {
@@ -220,6 +255,7 @@ function App() {
       const entry = list.entries.find( entry => entryID === entry.id );
       entry.content = value;
     }
+    saveFilesToStore(files);
   };
 
   const delEntry = (entryID) => {
@@ -239,6 +275,12 @@ function App() {
       }
     }
     dispatch({type: 'changeFiles' });
+    saveFilesToStore(files);
+  }
+
+  const saveCurrentFile = () => {
+    fileHelper.writeFile(join(savedLocation, 'wunderlist.json'), JSON.stringify(files));
+    console.log('save files');
   }
 
   return (
@@ -257,11 +299,10 @@ function App() {
             />
           </div>
           <FoldersPanel
-            searchMode={!!searchKeyword}
             showAll={!foldersPanelCollapsed}
+            selectedListID={selectedListID}
             files={files}
-            onCloseSearch={closeSearch}
-            onSelectList={(id) => dispatch({ type: 'selectList', payload: {id: id}})}
+            onSelectList={selectList}
             onEditList={editList}
             onCollapsePanel={collapsePanel}
           />
@@ -273,24 +314,29 @@ function App() {
         <div className={foldersPanelCollapsed ? 'col-11 bg-light' : 'col-9 bg-light'}>
           <FunctionBar
             searchMode={!!searchKeyword}
-            title={!searchKeyword ? sortedList.title : searchKeyword}
+            title={ searchKeyword ? searchKeyword : (sortedList && !sortedList.length ? sortedList.title: '')}
             onSortEntries={sortEntries}
           />
-          { !searchKeyword && 
+          { !searchKeyword &&
             <CreateItem
               onSubmit={submitEntry}
             />
           }
-          <EntryPanel
-            searchMode={!!searchKeyword}
-            collection={ !searchKeyword ? [sortedList] : searchResult}
-            onComplete={completeEntry}
-            onUnComplete={unCompleteEntry}
-            onStar={starEntry}
-            onUnStar={unStarEntry}
-            onEditEntry={editEntry}
-            onDelEntry={delEntry}
-          />
+          { sortedList && !sortedList.length &&
+            <EntryPanel
+              searchMode={!!searchKeyword}
+              collection={ !searchKeyword ? [sortedList] : searchResult}
+              onComplete={completeEntry}
+              onUnComplete={unCompleteEntry}
+              onStar={starEntry}
+              onUnStar={unStarEntry}
+              onEditEntry={editEntry}
+              onDelEntry={delEntry}
+            />
+          }
+          <button onClick={saveCurrentFile}>
+            保存
+          </button>
           {/* <button id='createList' onClick={() => {console.log('打开新窗口')}}>打开新窗口</button> */}
         </div>
       </div>

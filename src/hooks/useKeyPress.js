@@ -25,7 +25,7 @@ const useKeyPress = (targetKeyCode) => {
             document.removeEventListener('keyup', keyUpHandler);
         }
     });
-
+    
     return keyPressed;
 
 };

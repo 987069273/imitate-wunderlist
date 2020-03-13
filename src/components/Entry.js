@@ -3,7 +3,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSquare, faStar, faStarHalf, faCheckSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 import useKeyPress from '../hooks/useKeyPress';
+import useContextMenu from '../hooks/useContextMenu';
 
+const { remote } = window.require('electron');
+const { Menu, MenuItem } = remote;
 const Entry = ({entry, onClickSquare, onClickStar, onEditEntry, onDelEntry}) => {
     const [ inputActive, setInputAcitve ] = useState(false);
     const [ value, setValue ] = useState('');
@@ -37,12 +40,27 @@ const Entry = ({entry, onClickSquare, onClickStar, onEditEntry, onDelEntry}) => 
         }
     });
 
+    useContextMenu([
+        {
+            label: '重命名',
+            click : () => {
+                console.log('renaming');
+            }
+        },
+        {
+            label:'删除',
+            click: () => {
+                console.log('deleting')
+            }
+        }
+
+    ])
+
     useEffect(() => {
         if (inputActive) {
             node.current.focus();
         }
-    },[inputActive]);
-    
+    },[inputActive]);    
 
     return (
         <>
