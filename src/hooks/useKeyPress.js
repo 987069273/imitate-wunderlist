@@ -24,15 +24,15 @@ const useKeyPress = (targetKeyCode) => {
             document.removeEventListener('keydown', keyDownHandler);
             document.removeEventListener('keyup', keyUpHandler);
         }
-    });
+    },[]);
     
     return keyPressed;
 
 };
 
-useKeyPress.propTypes = {
+/* useKeyPress.propTypes = {
     keyCode: PropTypes.number,
-}
+} */
 
 export default useKeyPress;
 

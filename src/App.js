@@ -1,4 +1,4 @@
-import React, { useState, useReducer } from 'react';
+import React, { useReducer } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -32,6 +32,7 @@ const initState = {
   searchKeyword: false,
   selectedListID: initFiles[0] ? (initFiles[0].type === 'folder' ? initFiles[0].content[0].id : initFiles[0].id) : false,
   foldersPanelCollapsed: false,
+  activeListID: false,
 };
 
 /* fileHelper.readFile(join(savedLocation, 'wunderlist.json')).then(value => 
@@ -65,6 +66,11 @@ const appReducer = (state, action) => {
         ...state,
         foldersPanelCollapsed: !state.foldersPanelCollapsed,
       }
+    case 'activateList':
+      return {
+        ...state,
+        activeListID: action.payload.id,
+      }
     default: 
         return state;
   }
@@ -75,7 +81,7 @@ function App() {
 
   const [state, dispatch] = useReducer(appReducer, initState);
 
-  const { files, searchKeyword, selectedListID, foldersPanelCollapsed } = state;
+  const { files, searchKeyword, selectedListID, foldersPanelCollapsed, activeListID } = state;
 
   const allLists = files.reduce((acc, cur) => { //将所有条目整理出来，添加了folder和list的信息
     if (cur.type === 'folder'){
@@ -194,11 +200,11 @@ function App() {
     const newFiles = files;
     if (sortedList.folderID) {
       newFiles.find((item) => item.id === sortedList.folderID)
-      .content.find((list) => list.id === selectedListID)
+      .content.find((list) => list.id === activeListID)
       .title = title;
     }
     else {
-      newFiles.find((item) => item.id === selectedListID)
+      newFiles.find((item) => item.id === activeListID)
       .title = title;
     }
     dispatch({ type: 'changeFiles', payload: { files: newFiles } });
@@ -216,9 +222,28 @@ function App() {
     const newFiles = files;
     newFiles.push(newList);
     dispatch({ type: 'changeFiles', payload: { files: newFiles } });
-    dispatch({ type: 'selectList', payload: { id: newList.id } })
-    console.log(state);
+    dispatch({ type: 'selectList', payload: { id: newList.id } });
     saveFilesToStore(newFiles);
+  }
+
+  const activateList = (id) => {
+    dispatch({ type: 'activateList', payload: {id: id}});
+  }
+
+  const delList = (id) => {
+    let file = files.find(file => file.content.some(list => list.id === id));
+    if (file) {
+      file.splice(file.findIndex(list => list.id === id), 1);
+    }
+    else {
+      const listIdx = files.findIndex(list => list.id === id);
+      files.splice(listIdx, 1);
+    }
+    dispatch({type: 'changeFiles'});
+    if ( id === selectedListID ) {
+      dispatch({type: 'selectList' , payload: {id: false}})
+    }
+    saveFilesToStore(files);
   }
 
   const starEntry = (id) => {
@@ -230,6 +255,7 @@ function App() {
     else {
       sortedList.content.find((entry) => id === entry.id).starred = true;
     }
+    dispatch({type: 'changeFiles'});
     saveFilesToStore(files);
   }
 
@@ -242,6 +268,7 @@ function App() {
     else {
       delete sortedList.content.find((entry) => id === entry.id).starred;
     }
+    dispatch({type: 'changeFiles'});
     saveFilesToStore(files);
   }
 
@@ -255,6 +282,7 @@ function App() {
       const entry = list.entries.find( entry => entryID === entry.id );
       entry.content = value;
     }
+    dispatch({type: 'changeFiles'});
     saveFilesToStore(files);
   };
 
@@ -280,7 +308,6 @@ function App() {
 
   const saveCurrentFile = () => {
     fileHelper.writeFile(join(savedLocation, 'wunderlist.json'), JSON.stringify(files));
-    console.log('save files');
   }
 
   return (
@@ -301,10 +328,13 @@ function App() {
           <FoldersPanel
             showAll={!foldersPanelCollapsed}
             selectedListID={selectedListID}
+            activeListID={activeListID}
             files={files}
             onSelectList={selectList}
             onEditList={editList}
             onCollapsePanel={collapsePanel}
+            onDelList={delList}
+            onActivateList={activateList}
           />
           <CreateList
             showAll={!foldersPanelCollapsed}
@@ -317,13 +347,14 @@ function App() {
             title={ searchKeyword ? searchKeyword : (sortedList && !sortedList.length ? sortedList.title: '')}
             onSortEntries={sortEntries}
           />
-          { !searchKeyword &&
+          { !searchKeyword && selectedListID &&
             <CreateItem
               onSubmit={submitEntry}
             />
           }
           { sortedList && !sortedList.length &&
             <EntryPanel
+              selectedListID={selectedListID}
               searchMode={!!searchKeyword}
               collection={ !searchKeyword ? [sortedList] : searchResult}
               onComplete={completeEntry}

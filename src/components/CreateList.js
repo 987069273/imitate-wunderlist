@@ -10,6 +10,10 @@ const CreateList = ({ showAll, onCreateList }) => {
     const changeHandler = (value) => {
         setValue(value);
     }
+
+    const clickHandler = () => {
+        console.log('open edit-list window');
+    }
     
     return (
         <div className='d-flex justify-content-between align-items-center mb-0 bottom'>
@@ -19,7 +23,7 @@ const CreateList = ({ showAll, onCreateList }) => {
             />
             { showAll && 
                 <>
-                    {/* <span>创建清单</span> */}
+                    <span onClick={() => {clickHandler()}}>创建清单</span>
                     <input placeholder='创建清单' onChange={(e) => {changeHandler(e.target.value)}} />
                     <button onClick={() => {if (value !== '') {onCreateList(value)}}} >submit</button>
                 </>

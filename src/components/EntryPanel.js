@@ -1,12 +1,10 @@
 import React, { useState, useEffect }from 'react';
 import PropTypes from 'prop-types';
 import Entry from './Entry';
-import useForceUpdate from 'use-force-update';
 
-const EntryPanel = ({searchMode, collection, onComplete, onUnComplete, onStar, onUnStar, onEditEntry, onDelEntry}) => {
+const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnComplete, onStar, onUnStar, onEditEntry, onDelEntry}) => {
     const [ showCompleted, setShowCompleted ] = useState(false);
-
-    const forceUpdate = useForceUpdate();
+    const [ activeEntryID, setActiveEntryID ] = useState(false);
 
     const clickHandler = () => {
         setShowCompleted(!showCompleted);
@@ -19,7 +17,6 @@ const EntryPanel = ({searchMode, collection, onComplete, onUnComplete, onStar, o
         else {
             onComplete(entry.id);
         }
-        forceUpdate();
     }
 
     const clickStar = (entry) => {
@@ -29,65 +26,76 @@ const EntryPanel = ({searchMode, collection, onComplete, onUnComplete, onStar, o
         else {
             onStar(entry.id);
         }
-        forceUpdate();
+        console.log(entry.id);
     }
 
     const clickTrash = (entryID) => {
         onDelEntry(entryID);
-        forceUpdate();
     }
+
+    const selectMenuItem = (id) => {
+        setActiveEntryID(id);
+    }
+
+    useEffect(() => {
+        setShowCompleted(false);
+    },[selectedListID]);
 
     const completedEntries = !searchMode ? collection[0].content.filter((entry) => entry.completeAt) : null;
 
     const unCompletedEntries = !searchMode ? collection[0].content.filter((entry) => !entry.completeAt) : null;
 
-    useEffect(() => {
-        setShowCompleted(false);
-    },[collection]);
-
     return (
-        <>
+        <div>
         { !searchMode &&
             <div>
-                <ul className='list-group list-group-flush'>
-                    { unCompletedEntries.length !== 0 && unCompletedEntries.map((entry) => {
-                        return (
-                        <li
-                            key={entry.id}
-                            className='list-group-item'
-                        >
-                            <Entry
-                                entry={entry}
-                                onClickStar={clickStar}
-                                onClickSquare={clickSquare}
-                                onEditEntry={onEditEntry}
-                                onDelEntry={clickTrash}
-                            />
-                        </li>)
-                    })}
-                </ul>
+                <div className='uncompleted-entry-panel'>
+                    <ul className='list-group list-group-flush'>
+                        { unCompletedEntries.length !== 0 && unCompletedEntries.map((entry) => {
+                            return (
+                            <li
+                                key={entry.id}
+                                className='list-group-item'
+                            >
+                                <Entry
+                                    activeEntryID={activeEntryID}
+                                    entry={entry}
+                                    onClickStar={clickStar}
+                                    onClickSquare={clickSquare}
+                                    onEditEntry={onEditEntry}
+                                    onDelEntry={clickTrash}
+                                    onMenuClick={selectMenuItem}
+                                />
+                            </li>)
+                        })}
+                    </ul>
+                </div>
                 <span onClick = {() => {clickHandler()}}>显示已完成任务</span>
                 { showCompleted &&
-                    <ul className='list-group'>
-                        { completedEntries.length !==0 && completedEntries.map((entry) => {
-                                return (
-                                <li key={entry.id} className='list-group-item'>
-                                    <Entry
-                                        entry={entry}
-                                        onClickStar={clickStar}
-                                        onClickSquare={clickSquare}
-                                        onEditEntry={onEditEntry}
-                                        onDelEntry={clickTrash}
-                                    />
-                                </li>)
-                            })
-                        }
-                    </ul>
+                    <div className='completed-entry-panel'>
+                        <ul className='list-group'>
+                            { completedEntries.length !==0 && completedEntries.map((entry) => {
+                                    return (
+                                    <li key={entry.id} className='list-group-item'>
+                                        <Entry
+                                            activeEntryID={activeEntryID}
+                                            entry={entry}
+                                            onClickStar={clickStar}
+                                            onClickSquare={clickSquare}
+                                            onEditEntry={onEditEntry}
+                                            onDelEntry={clickTrash}
+                                            onMenuClick={selectMenuItem}
+                                        />
+                                    </li>)
+                                })
+                            }
+                        </ul>
+                </div>
                 }
             </div>
         }
         { searchMode && 
-            <ul className='list-group'>
+            <ul className='list-group search-results'>
                 { collection.map((item) => {
                     return (
                         <li key={item.id} className='list-group-item'>
@@ -96,11 +104,13 @@ const EntryPanel = ({searchMode, collection, onComplete, onUnComplete, onStar, o
                                 { item.entries.map(entry => { return (
                                     <li key={entry.id} className='list-group-item'>
                                         <Entry
+                                            activeEntryID={activeEntryID}
                                             entry={entry}
                                             onClickStar={clickStar}
                                             onClickSquare={clickSquare}
                                             onEditEntry={onEditEntry}
                                             onDelEntry={clickTrash}
+                                            onMenuClick={selectMenuItem}
                                         />
                                     </li>
                                     )}
@@ -111,7 +121,7 @@ const EntryPanel = ({searchMode, collection, onComplete, onUnComplete, onStar, o
                 })}
             </ul>
         }
-        </>
+        </div>
     )
 };
 

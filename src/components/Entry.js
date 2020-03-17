@@ -3,12 +3,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSquare, faStar, faStarHalf, faCheckSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 import useKeyPress from '../hooks/useKeyPress';
+import useClickOutside from '../hooks/useClickOutside';
 import useContextMenu from '../hooks/useContextMenu';
+import { getParentNode } from '../utils/helper';
 
-const { remote } = window.require('electron');
-const { Menu, MenuItem } = remote;
-const Entry = ({entry, onClickSquare, onClickStar, onEditEntry, onDelEntry}) => {
-    const [ inputActive, setInputAcitve ] = useState(false);
+const Entry = ({activeEntryID, entry, onClickSquare, onClickStar, onEditEntry, onDelEntry, onMenuClick}) => {
     const [ value, setValue ] = useState('');
 
     const node = useRef(null);
@@ -21,100 +20,126 @@ const Entry = ({entry, onClickSquare, onClickStar, onEditEntry, onDelEntry}) => 
     }
 
     const quitEditing = () => {
-        setInputAcitve(false);
-        setValue('');
+        onMenuClick(false);
     }
 
     const deleteEntry = (entryID) => {
-        quitEditing();
+        onMenuClick(false);
+        setValue('');
         onDelEntry(entryID);
     }
 
     useEffect(() => {
-        if (inputActive && enterPressed) {
+        if ( entry.id === activeEntryID && enterPressed) {
             onEditEntry(entry.id, value);
-            setInputAcitve(false);
+            onMenuClick(false);
         }
-        if (inputActive && escPressed) {
+        if ( entry.id === activeEntryID && escPressed) {
             quitEditing();
         }
     });
 
-    useContextMenu([
+    //此处遗留一个bug，当界面的entry数量为偶数时，右击只会闪现菜单；当数量为奇数时，菜单才会常驻
+    const clickedItem = useContextMenu([
         {
             label: '重命名',
             click : () => {
-                console.log('renaming');
+                const parentElement = getParentNode(clickedItem.current, 'entry');
+                if (parentElement) {
+                    onMenuClick(parentElement.dataset.id);
+                }
             }
         },
         {
             label:'删除',
             click: () => {
-                console.log('deleting')
+                const parentElement = getParentNode(clickedItem.current, 'entry');
+                if (parentElement) {
+                    onDelEntry(parentElement.dataset.id);
+                }
             }
         }
-
-    ])
+    ], ['.uncompleted-entry-panel', '.completed-entry-panel', '.search-results']);
 
     useEffect(() => {
-        if (inputActive) {
+        if ( entry.id === activeEntryID) {
             node.current.focus();
         }
-    },[inputActive]);    
+    },[activeEntryID]);  
+    
+     useClickOutside(node, () => {
+         if(entry.id === activeEntryID) {
+             quitEditing();
+         }
+     },[activeEntryID]);
 
     return (
         <>
-            <span>
+            <span className='row entry' data-id={entry.id}>
                 { !entry.completeAt &&
-                    <FontAwesomeIcon 
-                        icon={faSquare}
-                        size='lg'
-                        onClick={() => {onClickSquare(entry)}}
-                    />
+                    <span className='col-1'>
+                        <FontAwesomeIcon 
+                            icon={faSquare}
+                            size='lg'
+                            onClick={() => {onClickSquare(entry)}}
+                        />
+                    </span>
                 }
                 { entry.completeAt &&
-                    <FontAwesomeIcon 
-                        icon={faCheckSquare}
-                        size='lg'
-                        onClick={() => {onClickSquare(entry)}}
-                    />
-                }
-                { !inputActive &&
-                    <span onDoubleClick={() => {setInputAcitve(true)}}>{entry.content}</span>
-                }
-                { inputActive &&
-                    <>
-                        <input
-                            type='text'
-                            ref={node}
-                            onChange={(e) => {changeHandler(e)}}
-                        />
+                    <span className='col-1'>
                         <FontAwesomeIcon 
-                            title='删除'
-                            icon={faTrash}
+                            icon={faCheckSquare}
                             size='lg'
-                            onClick={() => {deleteEntry(entry.id)}}
+                            onClick={() => {onClickSquare(entry)}}
                         />
+                    </span>
+                }
+                { (entry.id !== activeEntryID) &&
+                    <span className='col-10' 
+                    onDoubleClick={(e) => {onMenuClick(entry.id)}}>{entry.content}</span>
+                }
+                { (entry.id === activeEntryID) &&
+                    <>
+                        <span className='col-9'>
+                            <input
+                                type='text'
+                                ref={node}
+                                onChange={(e) => {changeHandler(e)}}
+                            />
+                        </span>
+                        <span className='col-1'>
+                            <FontAwesomeIcon 
+                                title='删除'
+                                icon={faTrash}
+                                size='lg'
+                                onClick={() => {deleteEntry(entry.id)}}
+                            />
+                        </span>
                     </>
                 }
                 { entry.completeAt && 
                     <>{ entry.completeAt }</>
                 }
+            
+                { entry.starred &&
+                    <span className='col-1'>
+                        <FontAwesomeIcon 
+                            icon={faStar}
+                            size='lg'
+                            onClick={() => {onClickStar(entry)}}
+                        />
+                    </span>
+                }
+                { !entry.starred &&
+                    <span className='col-1'>
+                        <FontAwesomeIcon 
+                            icon={faStarHalf}
+                            size='lg'
+                            onClick={() => {onClickStar(entry)}}
+                        />
+                    </span>
+                }
             </span>
-            { entry.starred &&
-                <FontAwesomeIcon 
-                    icon={faStar}
-                    size='lg'
-                    onClick={() => {onClickStar(entry)}}
-                />
-            }
-            { !entry.starred &&
-                <FontAwesomeIcon 
-                    icon={faStarHalf}
-                    size='lg'
-                    onClick={() => {onClickStar(entry)}}
-                />
-            }
         </>
     );
 }

@@ -3,10 +3,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faAngleDown, faAngleLeft, faEllipsisH, faEllipsisV, faPencilAlt, faListUl } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 import useKeyPress from '../hooks/useKeyPress';
+import useClickOutside from '../hooks/useClickOutside';
+import useContextMenu from '../hooks/useContextMenu';
+import {getParentNode} from '../utils/helper';
+import classNames from 'classnames';
+import { act } from 'react-dom/test-utils';
 
-const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onEditList, onCollapsePanel }) => {
+const FoldersPanel = ({ showAll, selectedListID, activeListID, files, onSelectList, onEditList, onCollapsePanel, onDelList, onActivateList }) => {
     const [ collapsedFolderIDs, setCollapsedFolderIDs ] = useState([]);
-    const [ editStatus, setEditStatus ] = useState(false);
     const [ value, setValue ] = useState('');
 
     const node = useRef(null);
@@ -19,7 +23,7 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onEditList
     };
 
     const quitEditing = () => {
-        setEditStatus(false);
+        onActivateList(false);
         setValue('');
     };
 
@@ -32,39 +36,75 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onEditList
             setCollapsedFolderIDs(collapsedFolderIDs.concat(id));
         }
     };
-
+    
     useEffect(() => {
-        if(enterPressed && editStatus) {
+        if(enterPressed && activeListID) {
             onEditList(value);
-            setEditStatus(false);
+            onActivateList(false);
         }
-        if(escPressed && editStatus) {
+        if(escPressed && activeListID) {
             quitEditing();
         }
     });
 
     useEffect(() => {
-        if(editStatus){
+        if(activeListID){
             node.current.focus();
         }
-    },[editStatus]);
+    },[activeListID]);
 
+    //保持网页标题与选中的列表名称相同
     useEffect(() => {
         let file = files.find( file => file.id === selectedListID );
         file = file ? file : files.find( file => file.content.some( list => list.id === selectedListID ));
         if( file ) {
             const listTitle =  file.title;
             document.title = listTitle;
-        };
+        }
+        else {
+            document.title = 'wunderlist';
+        }
     }, [ selectedListID ]);
+
+    useClickOutside(node, ()=> {
+        if(activeListID){
+            quitEditing();
+        }
+    },[activeListID]);
+
+    const clickedList = useContextMenu([
+        {
+            label: '重命名',
+            click : () => {
+                const parentElement = getParentNode(clickedList.current, 'list-group-item');
+                if (parentElement) {
+                    onActivateList(parentElement.dataset.id);
+                }
+            }
+        },
+        {
+            label:'删除',
+            click: () => {
+                const parentElement = getParentNode(clickedList.current, 'list-group-item');
+                if (parentElement) {
+                    onDelList(parentElement.dataset.id);
+                }                
+            }
+        }
+    ], ['.folders-panel'], [files, selectedListID]);
 
     return (
         <>
             { !!files.length && 
-                <ul className='list-group'>
+                <ul className='list-group folders-panel'>
                     { showAll && files.map((file) => {
+                        let listStyle = file.type === 'list' ? classNames(
+                            'd-flex',
+                            'justify-content-between',
+                            {'selectedList': file.id === selectedListID}
+                        ) : undefined;
                         return (
-                            <li key={file.id} className='list-group-item'>
+                            <li key={file.id} className='list-group-item' data-id={file.type === 'list' ? file.id : undefined}>
                             { file.type === 'folder' && !collapsedFolderIDs.includes(file.id) &&
                                 <>
                                     <div
@@ -72,72 +112,59 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onEditList
                                         onClick={ () => {troggleCollapse(file.id)} }
                                     >
                                         <span>
-                                        <FontAwesomeIcon 
-                                            icon={faFolder}
-                                        />
-                                        {file.title}
+                                            <FontAwesomeIcon 
+                                                icon={faFolder}
+                                            />
+                                            {file.title}
                                         </span>
                                         <span>
-                                        <FontAwesomeIcon 
-                                            icon={faEllipsisH}
-                                        />
-                                        <FontAwesomeIcon 
-                                            icon={faAngleDown}
-                                        />
+                                            <FontAwesomeIcon 
+                                                icon={faEllipsisH}
+                                            />
+                                            <FontAwesomeIcon 
+                                                icon={faAngleDown}
+                                            />
                                         </span>
                                     </div>
                                     <ul className = 'list-group list-group-flush'>
                                     {file.content.map(list => {
+                                        listStyle = classNames(
+                                            'd-flex',
+                                            'justify-content-between',
+                                            {'selectedList': list.id === selectedListID}
+                                        );
                                         return (
-                                            <li key={list.id} className='list-group-item'>
-                                            { list.id !== selectedListID && 
+                                            <li key={list.id} className='list-group-item' data-id={list.id}>
                                                 <div
-                                                    className='d-flex justify-content-between'
+                                                    className={listStyle}
                                                     onClick={() => clickList(list.id)}
                                                 >
                                                     <span>
                                                         <FontAwesomeIcon 
-                                                        icon={faListUl}
-                                                    />
-                                                    {list.title}
-                                                    </span>
-                                                    <span>{list.content.length}</span>
-                                                </div>
-                                            }
-                                            {
-                                                list.id === selectedListID && 
-                                                <div className='d-flex justify-content-between selectedEntry' onClick={() => clickList(list.id)}>
-                                                    { list.id !== editStatus &&
-                                                        <>
-                                                            <span>
-                                                                <FontAwesomeIcon 
-                                                                    icon={faListUl}
-                                                                />
-                                                                {list.title}
-                                                            </span>
-                                                            <span>
-                                                                {list.content.length}
-                                                                <FontAwesomeIcon 
-                                                                    icon={faPencilAlt}
-                                                                    onClick={() => {setEditStatus(list.id)}}
-                                                                />
-                                                            </span>
-                                                        </>
-                                                    }
-                                                    { list.id === editStatus &&
-                                                    <>
-                                                        <FontAwesomeIcon 
                                                             icon={faListUl}
                                                         />
-                                                        <input
-                                                            ref={node}
-                                                            onChange={(e) => {setValue(e.target.value)}}
-                                                        />
-                                                    </>
-                                                    }
-                                                    
+                                                        { list.id !== activeListID && 
+                                                            <>{list.title}</>
+                                                        }
+                                                        { list.id === activeListID &&
+                                                            <>
+                                                                <input
+                                                                    ref={node}
+                                                                    onChange={(e) => setValue(e.target.value)}
+                                                                />
+                                                            </>
+                                                        }
+                                                    </span>
+                                                    <span>
+                                                        {list.content.filter( entry => !entry.completeAt ).length}
+                                                        {   list.id === selectedListID &&
+                                                            <FontAwesomeIcon 
+                                                                icon={faPencilAlt}
+                                                                onClick={() => {onActivateList(list.id)}}
+                                                            />
+                                                        }
+                                                    </span>                                                    
                                                 </div>
-                                            }
                                             </li>
                                         )
                                     })}
@@ -160,53 +187,35 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onEditList
                                     />
                                 </div>  
                             }
-                            { file.type === 'list' && file.id === selectedListID &&
+                            { file.type === 'list' &&
                                 <div
-                                    className='d-flex justify-content-between selectedEntry'
-                                    onClick={() => clickList(file.id)}
-                                >
-                                    { file.id !== editStatus &&
-                                        <>
-                                            <span>
-                                                <FontAwesomeIcon 
-                                                icon={faListUl}
-                                                />
-                                                {file.title}
-                                            </span>
-                                            <span>
-                                                {file.content.length}
-                                                <FontAwesomeIcon 
-                                                    icon={faPencilAlt}
-                                                    onClick={() => {setEditStatus(file.id)}}
-                                                />
-                                            </span>
-                                        </>
-                                    }
-                                    { file.id === editStatus &&
-                                        <>
-                                            <FontAwesomeIcon 
-                                            icon={faListUl}
-                                            />
-                                            <input
-                                                ref={node}
-                                                onChange={(e) => {setValue(e.target.value)}}
-                                            />
-                                        </>
-                                    }
-                                </div>
-                            }
-                            { file.type === 'list' && file.id !== selectedListID &&
-                                <div
-                                    className='d-flex justify-content-between'
+                                    className={listStyle}
+                                    data-id={file.id}
                                     onClick={() => clickList(file.id)}
                                 >
                                     <span>
                                         <FontAwesomeIcon 
-                                            icon={faListUl}
+                                        icon={faListUl}
                                         />
-                                        {file.title}
+                                        { file.id !== activeListID &&
+                                            <>{file.title}</>
+                                        }
+                                        { file.id === activeListID &&
+                                            <input
+                                                ref={node}
+                                                onChange={(e) => {setValue(e.target.value)}}
+                                            />
+                                        }
                                     </span>
-                                    {file.content.length}
+                                    <span>
+                                        {file.content.filter( entry => !entry.completeAt ).length}
+                                        {   file.id === selectedListID &&
+                                            <FontAwesomeIcon 
+                                                icon={faPencilAlt}
+                                                onClick={() => { onActivateList(file.id) }}
+                                            />
+                                        }
+                                    </span>
                                 </div>
                             }
                             </li>

@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 import useKeyPress from '../hooks/useKeyPress';
+import useClickOutSide from '../hooks/useClickOutside';
 
 const Search = ({ toShow, onSearch, onCloseSearch }) => {
     const [ isSearching, setIsSearching ] = useState(false);
@@ -37,6 +38,12 @@ const Search = ({ toShow, onSearch, onCloseSearch }) => {
             node.current.focus();
         }
     },[isSearching]);
+
+    useClickOutSide(node,() => {
+        if(isSearching){
+            exitSearching();
+        }
+    });
 
     return (
         <div className={isSearching ? 'input-group mb-3' : ''}>

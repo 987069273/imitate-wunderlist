@@ -6,7 +6,7 @@ input[type='text']:focus {
   outline-width: 0px;
 }
 
-.selectedEntry {
+.selectedList {
   background-color: #e0eefa;
 }
 
