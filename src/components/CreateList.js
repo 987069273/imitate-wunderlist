@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 
+const { ipcRenderer } = window.require('electron');
+
 const CreateList = ({ showAll, onCreateList }) => {
 
     const [ value, setValue ] = useState('');
@@ -12,7 +14,8 @@ const CreateList = ({ showAll, onCreateList }) => {
     }
 
     const clickHandler = () => {
-        console.log('open edit-list window');
+        //使用ipcRenderer模块可以向主进程发送信息
+        ipcRenderer.send('open-editList-window');
     }
     
     return (
@@ -24,8 +27,6 @@ const CreateList = ({ showAll, onCreateList }) => {
             { showAll && 
                 <>
                     <span onClick={() => {clickHandler()}}>创建清单</span>
-                    <input placeholder='创建清单' onChange={(e) => {changeHandler(e.target.value)}} />
-                    <button onClick={() => {if (value !== '') {onCreateList(value)}}} >submit</button>
                 </>
             }
         </div>

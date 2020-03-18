@@ -1,7 +1,9 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
 const AppWindow = require('./src/AppWindow');
 const path = require('path');
+const Store = require('electron-store');
+const fileStore = new Store({'name': 'Files Data'});
 let mainWindow, editListWindow;
 
 app.on('ready', () => {
@@ -21,19 +23,29 @@ app.on('ready', () => {
     })
     
     //hook up main events
-    ipcMain.on('open-editList-window', () => {
+    ipcMain.on('open-editList-window', (event) => {
         const editListWindowConfig = {
             width: 500,
             height: 400,
-            parent: mainWindow
+            parent: mainWindow,
+            title: 'edit list',
+            modal: true, //禁用父窗口
         };
         const editListFileLocation = `file://${path.join(__dirname, './Modify/editList.html')}`;
+        console.log(editListFileLocation);
         editListWindow = new AppWindow(editListWindowConfig, editListFileLocation);
         editListWindow.on('closed', () => {
             editListWindow = null;
         })
-
     })
+
+    /* ipcMain.on('send-list-title',(event, arg1, arg2) => {
+        console.log(arg1);
+        console.log(arg2);
+        const files = fileStore.get('files') || [];
+        
+
+    }) */
     
     
     /* ipcMain.on('message', (event, arg) => {
