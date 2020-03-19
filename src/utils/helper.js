@@ -7,6 +7,5 @@ export const getParentNode = (node, parentClassName) => {
         }
         current = current.parentNode;
     }
-    console.log(current);
     return false;
 }

@@ -26,7 +26,6 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
         else {
             onStar(entry.id);
         }
-        console.log(entry.id);
     }
 
     const clickTrash = (entryID) => {

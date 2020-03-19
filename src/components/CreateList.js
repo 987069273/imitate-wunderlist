@@ -1,17 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 
 const { ipcRenderer } = window.require('electron');
 
-const CreateList = ({ showAll, onCreateList }) => {
-
-    const [ value, setValue ] = useState('');
-
-    const changeHandler = (value) => {
-        setValue(value);
-    }
+const CreateList = ({ showAll }) => {
 
     const clickHandler = () => {
         //使用ipcRenderer模块可以向主进程发送信息
@@ -19,14 +13,17 @@ const CreateList = ({ showAll, onCreateList }) => {
     }
     
     return (
-        <div className='d-flex justify-content-between align-items-center mb-0 bottom'>
+        <div
+            className='d-flex justify-content-between align-items-center mb-0 bottom'
+            onClick={() => {clickHandler()}}
+        >
             <FontAwesomeIcon 
                 title='添加'
                 icon={faPlus}
             />
             { showAll && 
                 <>
-                    <span onClick={() => {clickHandler()}}>创建清单</span>
+                    <span>创建清单</span>
                 </>
             }
         </div>

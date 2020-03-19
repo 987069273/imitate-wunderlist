@@ -30,10 +30,6 @@ const useKeyPress = (targetKeyCode) => {
 
 };
 
-/* useKeyPress.propTypes = {
-    keyCode: PropTypes.number,
-} */
-
 export default useKeyPress;
 
 

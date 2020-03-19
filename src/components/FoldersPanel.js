@@ -1,30 +1,28 @@
-import React, { useState, useEffect, useRef }from 'react';
+import React, { useState, useEffect}from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faAngleDown, faAngleLeft, faEllipsisH, faEllipsisV, faPencilAlt, faListUl } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
-import useKeyPress from '../hooks/useKeyPress';
-import useClickOutside from '../hooks/useClickOutside';
 import useContextMenu from '../hooks/useContextMenu';
 import {getParentNode} from '../utils/helper';
 import classNames from 'classnames';
-import { act } from 'react-dom/test-utils';
 
-const FoldersPanel = ({ showAll, selectedListID, activeListID, files, onSelectList, onEditList, onCollapsePanel, onDelList, onActivateList }) => {
+const { ipcRenderer } = window.require('electron');
+
+const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapsePanel, onDelList }) => {
     const [ collapsedFolderIDs, setCollapsedFolderIDs ] = useState([]);
-    const [ value, setValue ] = useState('');
-
-    const node = useRef(null);
-
-    const enterPressed = useKeyPress(13);
-    const escPressed = useKeyPress(27);
 
     const clickList = (id) => {
         onSelectList(id);
     };
 
-    const quitEditing = () => {
-        onActivateList(false);
-        setValue('');
+    const renameList = (id) => {
+        let file = files.find( file => file.id === id );
+        file = file ? file : files.find( file => file.content.some( list => list.id === id ));
+        let listTitle;
+        if( file ) {
+            listTitle =  file.title;
+        }
+        ipcRenderer.send('open-editList-window', listTitle);
     };
 
     const troggleCollapse = (id) => {
@@ -36,22 +34,6 @@ const FoldersPanel = ({ showAll, selectedListID, activeListID, files, onSelectLi
             setCollapsedFolderIDs(collapsedFolderIDs.concat(id));
         }
     };
-    
-    useEffect(() => {
-        if(enterPressed && activeListID) {
-            onEditList(value);
-            onActivateList(false);
-        }
-        if(escPressed && activeListID) {
-            quitEditing();
-        }
-    });
-
-    useEffect(() => {
-        if(activeListID){
-            node.current.focus();
-        }
-    },[activeListID]);
 
     //保持网页标题与选中的列表名称相同
     useEffect(() => {
@@ -66,19 +48,13 @@ const FoldersPanel = ({ showAll, selectedListID, activeListID, files, onSelectLi
         }
     }, [ selectedListID ]);
 
-    useClickOutside(node, ()=> {
-        if(activeListID){
-            quitEditing();
-        }
-    },[activeListID]);
-
     const clickedList = useContextMenu([
         {
             label: '重命名',
             click : () => {
                 const parentElement = getParentNode(clickedList.current, 'list-group-item');
                 if (parentElement) {
-                    onActivateList(parentElement.dataset.id);
+                    renameList(parentElement.dataset.id);
                 }
             }
         },
@@ -143,24 +119,14 @@ const FoldersPanel = ({ showAll, selectedListID, activeListID, files, onSelectLi
                                                         <FontAwesomeIcon 
                                                             icon={faListUl}
                                                         />
-                                                        { list.id !== activeListID && 
-                                                            <>{list.title}</>
-                                                        }
-                                                        { list.id === activeListID &&
-                                                            <>
-                                                                <input
-                                                                    ref={node}
-                                                                    onChange={(e) => setValue(e.target.value)}
-                                                                />
-                                                            </>
-                                                        }
+                                                        {list.title}
                                                     </span>
                                                     <span>
                                                         {list.content.filter( entry => !entry.completeAt ).length}
                                                         {   list.id === selectedListID &&
                                                             <FontAwesomeIcon 
                                                                 icon={faPencilAlt}
-                                                                onClick={() => {onActivateList(list.id)}}
+                                                                onClick={() => {renameList(list.id)}}
                                                             />
                                                         }
                                                     </span>                                                    
@@ -197,22 +163,14 @@ const FoldersPanel = ({ showAll, selectedListID, activeListID, files, onSelectLi
                                         <FontAwesomeIcon 
                                         icon={faListUl}
                                         />
-                                        { file.id !== activeListID &&
-                                            <>{file.title}</>
-                                        }
-                                        { file.id === activeListID &&
-                                            <input
-                                                ref={node}
-                                                onChange={(e) => {setValue(e.target.value)}}
-                                            />
-                                        }
+                                        {file.title}
                                     </span>
                                     <span>
                                         {file.content.filter( entry => !entry.completeAt ).length}
                                         {   file.id === selectedListID &&
                                             <FontAwesomeIcon 
                                                 icon={faPencilAlt}
-                                                onClick={() => { onActivateList(file.id) }}
+                                                onClick={() => { renameList(file.id) }}
                                             />
                                         }
                                     </span>
@@ -231,7 +189,6 @@ const FoldersPanel = ({ showAll, selectedListID, activeListID, files, onSelectLi
                     onClick={() => {onCollapsePanel(false)}}
                 />
             }
-            
         </>
     );
 };

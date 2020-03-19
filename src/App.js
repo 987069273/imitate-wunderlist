@@ -15,7 +15,7 @@ import EntryPanel from './components/EntryPanel';
 import fileHelper from './utils/fileHelper';
 
 const { join } = window.require('path'); 
-const { remote } = window.require('electron');
+const { remote, ipcRenderer } = window.require('electron');
 const Store = window.require('electron-store');
 
 const savedLocation = remote.app.getPath('documents');
@@ -25,24 +25,14 @@ const saveFilesToStore = (files) => {
   fileStore.set('files', files);
 }
 
-const initFiles = fileStore.get('files') || [];
+let initFiles = fileStore.get('files') || [];
 
 const initState = {
   files: initFiles,
   searchKeyword: false,
   selectedListID: initFiles[0] ? (initFiles[0].type === 'folder' ? initFiles[0].content[0].id : initFiles[0].id) : false,
   foldersPanelCollapsed: false,
-  activeListID: false,
 };
-
-/* fileHelper.readFile(join(savedLocation, 'wunderlist.json')).then(value => 
-  {
-    const files = JSON.parse(value);
-    initState.files = files
-  }).catch( err =>
-    console.log('no such file')
-  ); */
-
 
 const appReducer = (state, action) => {
   switch(action.type) {
@@ -66,22 +56,21 @@ const appReducer = (state, action) => {
         ...state,
         foldersPanelCollapsed: !state.foldersPanelCollapsed,
       }
-    case 'activateList':
-      return {
-        ...state,
-        activeListID: action.payload.id,
-      }
     default: 
         return state;
   }
 };
 
-
 function App() {
 
   const [state, dispatch] = useReducer(appReducer, initState);
+  
+  ipcRenderer.on('refresh',(event, arg) => {
+    initFiles = fileStore.get('files') || [];
+    dispatch({type: 'changeFiles', payload: {files: initFiles}})
+  })
 
-  const { files, searchKeyword, selectedListID, foldersPanelCollapsed, activeListID } = state;
+  const { files, searchKeyword, selectedListID, foldersPanelCollapsed } = state;
 
   const allLists = files.reduce((acc, cur) => { //将所有条目整理出来，添加了folder和list的信息
     if (cur.type === 'folder'){
@@ -182,49 +171,12 @@ function App() {
     saveFilesToStore(files);
   }
 
-/*   const createList = (title) => {
-    remote.dialog.showOpenDialog({
-      type: 'info',
-      message: `create a list titled ${title}`,
-    });
-  }; */
-
   const selectList = (id) => {
     if (!!searchKeyword) {
       closeSearch();
     }
     dispatch({ type: 'selectList', payload: {id: id} });
   };
-
-  const editList = (title) => {
-    const newFiles = files;
-    if (sortedList.folderID) {
-      newFiles.find((item) => item.id === sortedList.folderID)
-      .content.find((list) => list.id === activeListID)
-      .title = title;
-    }
-    else {
-      newFiles.find((item) => item.id === activeListID)
-      .title = title;
-    }
-    dispatch({ type: 'changeFiles', payload: { files: newFiles } });
-    saveFilesToStore(newFiles);
-  }
-
-  const createList = (title) => {
-    const newList = {
-      id: uuidv4(),
-      type: 'list',
-      title: title,
-      content: [],
-      createdAt: (new Date()).getTime(),
-    }
-    const newFiles = files;
-    newFiles.push(newList);
-    dispatch({ type: 'changeFiles', payload: { files: newFiles } });
-    dispatch({ type: 'selectList', payload: { id: newList.id } });
-    saveFilesToStore(newFiles);
-  }
 
   const activateList = (id) => {
     dispatch({ type: 'activateList', payload: {id: id}});
@@ -328,17 +280,14 @@ function App() {
           <FoldersPanel
             showAll={!foldersPanelCollapsed}
             selectedListID={selectedListID}
-            activeListID={activeListID}
             files={files}
             onSelectList={selectList}
-            onEditList={editList}
             onCollapsePanel={collapsePanel}
             onDelList={delList}
             onActivateList={activateList}
           />
           <CreateList
             showAll={!foldersPanelCollapsed}
-            onCreateList={createList}
           />
         </div>
         <div className={foldersPanelCollapsed ? 'col-11 bg-light' : 'col-9 bg-light'}>
@@ -368,7 +317,6 @@ function App() {
           <button onClick={saveCurrentFile}>
             保存
           </button>
-          {/* <button id='createList' onClick={() => {console.log('打开新窗口')}}>打开新窗口</button> */}
         </div>
       </div>
     </div>
