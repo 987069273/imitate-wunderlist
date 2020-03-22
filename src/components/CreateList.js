@@ -14,18 +14,22 @@ const CreateList = ({ showAll }) => {
     
     return (
         <div
-            className='d-flex justify-content-between align-items-center mb-0 bottom'
+            className='d-flex align-items-center my-1 mr-0 bottom'
+            style={{height: '26px'}}
             onClick={() => {clickHandler()}}
         >
-            <FontAwesomeIcon 
-                title='添加'
-                icon={faPlus}
-            />
-            { showAll && 
-                <>
-                    <span>创建清单</span>
-                </>
-            }
+            <button className='btn px-0 shadow-none'>
+                <FontAwesomeIcon 
+                    className='mr-1'
+                    title='添加'
+                    icon={faPlus}
+                />
+                { showAll && 
+                    <>
+                        <span>创建清单</span>
+                    </>
+                }
+            </button>
         </div>
     )
 }

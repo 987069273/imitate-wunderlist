@@ -6,10 +6,6 @@ input[type='text']:focus {
   outline-width: 0px;
 }
 
-.selectedList {
-  background-color: #e0eefa;
-}
-
 .bottom {
   position: absolute;
   bottom: 0px;
@@ -19,3 +15,15 @@ input[type='text']:focus {
   min-height: 100vh;
   position: relative;
 }
+
+.verticalScroll {
+  height: 87vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.noScroll {
+  overflow-y: hidden;
+}
+
+

@@ -4,7 +4,6 @@ import { faFolder, faAngleDown, faAngleLeft, faEllipsisH, faEllipsisV, faPencilA
 import PropTypes from 'prop-types';
 import useContextMenu from '../hooks/useContextMenu';
 import {getParentNode} from '../utils/helper';
-import classNames from 'classnames';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -46,7 +45,7 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapse
         else {
             document.title = 'wunderlist';
         }
-    }, [ selectedListID ]);
+    }, [ selectedListID, files ]);
 
     const clickedList = useContextMenu([
         {
@@ -70,17 +69,17 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapse
     ], ['.folders-panel'], [files, selectedListID]);
 
     return (
-        <>
+        <div className='verticalScroll'>
             { !!files.length && 
                 <ul className='list-group folders-panel'>
                     { showAll && files.map((file) => {
-                        let listStyle = file.type === 'list' ? classNames(
-                            'd-flex',
-                            'justify-content-between',
-                            {'selectedList': file.id === selectedListID}
-                        ) : undefined;
                         return (
-                            <li key={file.id} className='list-group-item' data-id={file.type === 'list' ? file.id : undefined}>
+                            <li
+                                key={file.id}
+                                className={file.id === selectedListID ? 'list-group-item-primary list-group-item' : 'list-group-item'}
+                                data-id={file.type === 'list' ? file.id : undefined}
+                                onClick={file.type === 'list' ? () => clickList(file.id) : undefined}
+                            >
                             { file.type === 'folder' && !collapsedFolderIDs.includes(file.id) &&
                                 <>
                                     <div
@@ -89,34 +88,37 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapse
                                     >
                                         <span>
                                             <FontAwesomeIcon 
+                                                className='mr-1'
                                                 icon={faFolder}
                                             />
                                             {file.title}
                                         </span>
-                                        <span>
+                                        <span >
                                             <FontAwesomeIcon 
+                                                className='mr-1'
                                                 icon={faEllipsisH}
                                             />
                                             <FontAwesomeIcon 
+                                                className='mr-1'
                                                 icon={faAngleDown}
                                             />
                                         </span>
                                     </div>
                                     <ul className = 'list-group list-group-flush'>
                                     {file.content.map(list => {
-                                        listStyle = classNames(
-                                            'd-flex',
-                                            'justify-content-between',
-                                            {'selectedList': list.id === selectedListID}
-                                        );
                                         return (
-                                            <li key={list.id} className='list-group-item' data-id={list.id}>
+                                            <li
+                                                key={list.id}
+                                                className={list.id === selectedListID ? 'list-group-item-primary list-group-item' : 'list-group-item'}
+                                                data-id={list.id}
+                                                onClick={() => clickList(file.id)}
+                                            >
                                                 <div
-                                                    className={listStyle}
-                                                    onClick={() => clickList(list.id)}
+                                                    className='d-flex justify-content-between'
                                                 >
-                                                    <span>
+                                                    <span >
                                                         <FontAwesomeIcon 
+                                                            className='mr-1'
                                                             icon={faListUl}
                                                         />
                                                         {list.title}
@@ -124,10 +126,13 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapse
                                                     <span>
                                                         {list.content.filter( entry => !entry.completeAt ).length}
                                                         {   list.id === selectedListID &&
-                                                            <FontAwesomeIcon 
-                                                                icon={faPencilAlt}
-                                                                onClick={() => {renameList(list.id)}}
-                                                            />
+                                                            <span>
+                                                                <FontAwesomeIcon 
+                                                                    className='ml-1'
+                                                                    icon={faPencilAlt}
+                                                                    onClick={() => {renameList(list.id)}}
+                                                                />
+                                                            </span>
                                                         }
                                                     </span>                                                    
                                                 </div>
@@ -144,23 +149,25 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapse
                                 >
                                     <span>
                                         <FontAwesomeIcon 
+                                            className='mr-1'
                                             icon={faFolder}
                                         />
                                         {file.title}
                                     </span>
                                     <FontAwesomeIcon 
+                                        className='mr-1'
                                         icon={faAngleLeft}
                                     />
                                 </div>  
                             }
                             { file.type === 'list' &&
                                 <div
-                                    className={listStyle}
+                                    className='d-flex justify-content-between'
                                     data-id={file.id}
-                                    onClick={() => clickList(file.id)}
                                 >
                                     <span>
                                         <FontAwesomeIcon 
+                                        className='mr-1'
                                         icon={faListUl}
                                         />
                                         {file.title}
@@ -169,6 +176,7 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapse
                                         {file.content.filter( entry => !entry.completeAt ).length}
                                         {   file.id === selectedListID &&
                                             <FontAwesomeIcon 
+                                                className='ml-1'
                                                 icon={faPencilAlt}
                                                 onClick={() => { renameList(file.id) }}
                                             />
@@ -182,14 +190,15 @@ const FoldersPanel = ({ showAll, selectedListID, files, onSelectList, onCollapse
                 </ul>
             }
             { !showAll && 
-                <FontAwesomeIcon 
-                    className = 'align-left'
-                    icon={faEllipsisV}
-                    size='lg'
-                    onClick={() => {onCollapsePanel(false)}}
-                />
+                <div className='row justify-content-center'>
+                    <FontAwesomeIcon
+                        icon={faEllipsisV}
+                        size='lg'
+                        onClick={() => {onCollapsePanel(false)}}
+                    />
+                </div>
             }
-        </>
+        </div>
     );
 };
 

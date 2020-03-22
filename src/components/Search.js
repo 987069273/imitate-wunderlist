@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 import useKeyPress from '../hooks/useKeyPress';
-import useClickOutSide from '../hooks/useClickOutside';
 
 const Search = ({ toShow, onSearch, onCloseSearch }) => {
     const [ isSearching, setIsSearching ] = useState(false);
@@ -39,19 +38,14 @@ const Search = ({ toShow, onSearch, onCloseSearch }) => {
         }
     },[isSearching]);
 
-    useClickOutSide(node,() => {
-        if(isSearching){
-            exitSearching();
-        }
-    });
-
     return (
-        <div className={isSearching ? 'input-group mb-3' : ''}>
+        <div className='align-items-center'>
             { toShow && !isSearching && 
                 <>
                     <input
                         type='text'
                         ref={node}
+                        className='mx-1'
                         onClick={() => setIsSearching(true)}
                         onChange={(e) => changeHandler(e)}
                     />
@@ -61,7 +55,6 @@ const Search = ({ toShow, onSearch, onCloseSearch }) => {
                         <FontAwesomeIcon 
                             title='搜索'
                             icon={faSearch}
-                            size='lg'
                         />
                     </span>
                 </>
@@ -71,6 +64,7 @@ const Search = ({ toShow, onSearch, onCloseSearch }) => {
                     <input
                         type='text'
                         ref={node}
+                        className='mx-1'
                         onChange={(e) => changeHandler(e)}
                     />
                     <span
@@ -79,7 +73,6 @@ const Search = ({ toShow, onSearch, onCloseSearch }) => {
                         <FontAwesomeIcon 
                             title='关闭'
                             icon={faTimes}
-                            size='lg'
                         />
                     </span>
                 </>

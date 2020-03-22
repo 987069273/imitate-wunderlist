@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef }from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSquare, faStar, faStarHalf, faCheckSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faCheckSquare, faStar as solidStar, faTrash} from '@fortawesome/free-solid-svg-icons';
+import { faSquare, faStar, }  from '@fortawesome/free-regular-svg-icons';
 import PropTypes from 'prop-types';
 import useKeyPress from '../hooks/useKeyPress';
 import useClickOutside from '../hooks/useClickOutside';
-import useContextMenu from '../hooks/useContextMenu';
-import { getParentNode } from '../utils/helper';
 
-const Entry = ({activeEntryID, entry, onClickSquare, onClickStar, onEditEntry, onDelEntry, onMenuClick}) => {
+const Entry = ({activeEntryID, entry, onClickSquare, onClickStar, onSubmitChange, onDeleteEntry/* , onDblClick */}) => {
     const [ value, setValue ] = useState('');
 
     const node = useRef(null);
@@ -15,132 +14,132 @@ const Entry = ({activeEntryID, entry, onClickSquare, onClickStar, onEditEntry, o
     const enterPressed = useKeyPress(13);
     const escPressed = useKeyPress(27);
 
+    const getStandardTime = (millisec) => {
+        const d = new Date();
+        d.setTime(millisec);
+        const months = {0: 'Jan', 1: 'Feb', 2: 'Mar', 3: 'Apr', 4: 'May', 5: 'Jun', 6: 'Jul', 7: 'Aug', 8: 'Sep', 9: 'Oct', 10: 'Nov', 11: 'Dec'};
+        return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    };
+
     const changeHandler = (e) => {
         setValue(e.target.value);
     }
 
     const quitEditing = () => {
-        onMenuClick(false);
+        onSubmitChange(entry.id, entry.content);
+        setValue('');
     }
 
     const deleteEntry = (entryID) => {
-        onMenuClick(false);
         setValue('');
-        onDelEntry(entryID);
+        onDeleteEntry(entryID);
     }
 
     useEffect(() => {
         if ( entry.id === activeEntryID && enterPressed) {
-            onEditEntry(entry.id, value);
-            onMenuClick(false);
+            onSubmitChange(entry.id, value);
         }
         if ( entry.id === activeEntryID && escPressed) {
             quitEditing();
         }
     });
 
-    //此处遗留一个bug，当界面的entry数量为偶数时，右击只会闪现菜单；当数量为奇数时，菜单才会常驻
-    const clickedItem = useContextMenu([
-        {
-            label: '重命名',
-            click : () => {
-                const parentElement = getParentNode(clickedItem.current, 'entry');
-                if (parentElement) {
-                    onMenuClick(parentElement.dataset.id);
-                }
-            }
-        },
-        {
-            label:'删除',
-            click: () => {
-                const parentElement = getParentNode(clickedItem.current, 'entry');
-                if (parentElement) {
-                    onDelEntry(parentElement.dataset.id);
-                }
-            }
-        }
-    ], ['.uncompleted-entry-panel', '.completed-entry-panel', '.search-results']);
-
     useEffect(() => {
-        if ( entry.id === activeEntryID) {
+        if ( entry.id === activeEntryID ) {
+            node.current.value = entry.content;
             node.current.focus();
         }
-    },[activeEntryID]);  
+    },[activeEntryID]);
     
      useClickOutside(node, () => {
-         if(entry.id === activeEntryID) {
+         if( entry.id === activeEntryID ) {
              quitEditing();
          }
      },[activeEntryID]);
 
     return (
-        <>
-            <span className='row entry' data-id={entry.id}>
-                { !entry.completeAt &&
-                    <span className='col-1'>
-                        <FontAwesomeIcon 
-                            icon={faSquare}
-                            size='lg'
-                            onClick={() => {onClickSquare(entry)}}
-                        />
-                    </span>
-                }
-                { entry.completeAt &&
-                    <span className='col-1'>
-                        <FontAwesomeIcon 
-                            icon={faCheckSquare}
-                            size='lg'
-                            onClick={() => {onClickSquare(entry)}}
-                        />
-                    </span>
-                }
-                { (entry.id !== activeEntryID) &&
-                    <span className='col-10' 
-                    onDoubleClick={(e) => {onMenuClick(entry.id)}}>{entry.content}</span>
-                }
-                { (entry.id === activeEntryID) &&
-                    <>
-                        <span className='col-9'>
+            <span className='row justify-content-between align-items-center'>
+                <span className='row px-3'>
+                    { !entry.completeAt &&
+                        <span className='mx-2'>
+                            <FontAwesomeIcon 
+                                icon={faSquare}
+                                size='lg'
+                                onClick={() => {onClickSquare(entry)}}
+                            />
+                        </span>
+                    }
+                    { entry.completeAt &&
+                        <span className='mx-2'>
+                            <i className='fa fa-square-o'></i>
+                            <FontAwesomeIcon 
+                                icon={faCheckSquare}
+                                size='lg'
+                                onClick={() => {onClickSquare(entry)}}
+                            />
+                        </span>
+                    }
+                    { (entry.id !== activeEntryID) &&
+                        <span
+                            /* onDoubleClick={(e) => {onDblClick(entry.id)}} */
+                        >
+                            {entry.completeAt &&
+                                <div
+                                    className='py-0 my-n3 align-items-center'  //my-n3为纵向margin为-0.75rem
+                                > 
+                                    <del className='d-block my-0'>{entry.content}</del>
+                                    <small className='d-block my-0'>{ getStandardTime(entry.completeAt) }</small>
+                                </div>
+                            }
+                            {!entry.completeAt &&
+                                <div className='py-auto'>{entry.content}</div>
+                            }
+                        </span>
+                    }
+                    { (entry.id === activeEntryID) &&
+                        <span className='my-n1'>
                             <input
                                 type='text'
                                 ref={node}
                                 onChange={(e) => {changeHandler(e)}}
                             />
                         </span>
-                        <span className='col-1'>
+                    }
+                </span>
+                <span>
+                    { (entry.id === activeEntryID) &&
+                        <span>
+                        <FontAwesomeIcon 
+                            className='mx-2'
+                            title='删除'
+                            icon={faTrash}
+                            size='lg'
+                            onClick={() => {deleteEntry(entry.id)}}
+                        />
+                    </span>
+                    }      
+                    { !entry.starred &&
+                        <span>
                             <FontAwesomeIcon 
-                                title='删除'
-                                icon={faTrash}
+                                className='mx-2'
+                                icon={faStar}
                                 size='lg'
-                                onClick={() => {deleteEntry(entry.id)}}
+                                onClick={() => {onClickStar(entry)}}
                             />
                         </span>
-                    </>
-                }
-                { entry.completeAt && 
-                    <>{ entry.completeAt }</>
-                }
-            
-                { entry.starred &&
-                    <span className='col-1'>
-                        <FontAwesomeIcon 
-                            icon={faStar}
-                            size='lg'
-                            onClick={() => {onClickStar(entry)}}
-                        />
-                    </span>
-                }
-                { !entry.starred &&
-                    <span className='col-1'>
-                        <FontAwesomeIcon 
-                            icon={faStarHalf}
-                            size='lg'
-                            onClick={() => {onClickStar(entry)}}
-                        />
-                    </span>
-                }
+                    }
+                    { entry.starred &&
+                        <span>
+                            <FontAwesomeIcon 
+                                className='mx-2'
+                                icon={solidStar}
+                                size='lg'
+                                onClick={() => {onClickStar(entry)}}
+                            />
+                        </span>
+                    }
+                </span>
             </span>
-        </>
     );
 }
 

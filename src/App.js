@@ -118,12 +118,13 @@ function App() {
     }
   };
 
-  const submitEntry = (value) => {
+  const submitEntry = (value, starred) => {
     const newEntry = {
       id: uuidv4(),
       type: 'entry',
       content: value,
       createdAt: (new Date()).getTime(),
+      starred: starred,
     };
     const newFiles = files;
     if (sortedList.folderID) {
@@ -260,13 +261,19 @@ function App() {
 
   const saveCurrentFile = () => {
     fileHelper.writeFile(join(savedLocation, 'wunderlist.json'), JSON.stringify(files));
+    remote.dialog.showMessageBox( {
+      type: 'info',
+      title: 'Saved!',
+      message:'保存成功',
+    } );
   }
 
   return (
     <div className="App container-fluid">
       <div className='row'>
-        <div className={foldersPanelCollapsed ? 'col-1 bg-light fullHeight' : 'col-3 bg-light fullHeight'}>
-          <div className='d-flex'>
+        <div className={foldersPanelCollapsed ? 'col-md-auto bg-light fullHeight pl-2' : 'col-3 bg-light fullHeight pl-2'}>
+          {/* 此处的格式col-md-auto可以跟随内容进行宽度调整，搭配下面的col使用 */}
+          <div className='d-flex my-1'>
             <MenuBars
               collapsed={foldersPanelCollapsed}
               onCollapsePanel={collapsePanel}
@@ -290,12 +297,14 @@ function App() {
             showAll={!foldersPanelCollapsed}
           />
         </div>
-        <div className={foldersPanelCollapsed ? 'col-11 bg-light' : 'col-9 bg-light'}>
+        <div className={foldersPanelCollapsed ? 'col bg-light pl-0 py-1' : 'col-9 bg-light pl-0 py-1'}>
+          {/* 此处的格式col可以填充剩余的宽度，搭配上面的col-md-auto使用 */}
           <FunctionBar
             searchMode={!!searchKeyword}
             title={ searchKeyword ? searchKeyword : (sortedList && !sortedList.length ? sortedList.title: '')}
             onSortEntries={sortEntries}
           />
+          <div className='verticalScroll'>
           { !searchKeyword && selectedListID &&
             <CreateItem
               onSubmit={submitEntry}
@@ -314,7 +323,8 @@ function App() {
               onDelEntry={delEntry}
             />
           }
-          <button onClick={saveCurrentFile}>
+          </div>
+          <button className='bottom w-100 border-0 btn outline shadow-none' onClick={saveCurrentFile}>
             保存
           </button>
         </div>

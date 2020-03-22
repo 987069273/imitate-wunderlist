@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 const FunctionBar = ({ searchMode, title, onSortEntries }) => {
     return (
         <div className='d-flex justify-content-between'>
-            <span>{title}</span>
+            <h5>{title}</h5>
             <span>
                 {/* {
                     !searchMode && 
@@ -24,7 +24,6 @@ const FunctionBar = ({ searchMode, title, onSortEntries }) => {
                         />
                     </>
                 } */}
-
             <FontAwesomeIcon 
                 title='更多'
                 icon={faEllipsisH}

@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 
 const MenuBars = ({ collapsed, onCollapsePanel }) => {
     return (
-        <div>
+        <div className='my-auto align-items-center' style={{height: '26px'}}>
             <FontAwesomeIcon 
                 title='汉堡菜单'
                 icon={faBars}

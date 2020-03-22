@@ -1,6 +1,8 @@
 import React, { useState, useEffect }from 'react';
 import PropTypes from 'prop-types';
 import Entry from './Entry';
+import useContextMenu from '../hooks/useContextMenu';
+import { getParentNode } from '../utils/helper';
 
 const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnComplete, onStar, onUnStar, onEditEntry, onDelEntry}) => {
     const [ showCompleted, setShowCompleted ] = useState(false);
@@ -28,13 +30,40 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
         }
     }
 
-    const clickTrash = (entryID) => {
+    const editEntry = (id, value) => {
+        onEditEntry(id, value);
+        setActiveEntryID(false);
+    };
+
+    const deleteEntry = (entryID) => {
+        setActiveEntryID(false);
         onDelEntry(entryID);
     }
 
-    const selectMenuItem = (id) => {
+    const dblClickHandler = (id) => {
         setActiveEntryID(id);
     }
+
+    const clickedItem = useContextMenu([
+        {
+            label: '重命名',
+            click : () => {
+                const parentElement = getParentNode(clickedItem.current, 'list-group-item');
+                if (parentElement) {
+                    setActiveEntryID(parentElement.dataset.id);
+                }
+            }
+        },
+        {
+            label:'删除',
+            click: () => {
+                const parentElement = getParentNode(clickedItem.current, 'list-group-item');
+                if (parentElement) {
+                    onDelEntry(parentElement.dataset.id);
+                }
+            }
+        }
+    ], ['.uncompleted-entry-panel', '.completed-entry-panel', '.search-results'],[collection]);
 
     useEffect(() => {
         setShowCompleted(false);
@@ -45,7 +74,7 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
     const unCompletedEntries = !searchMode ? collection[0].content.filter((entry) => !entry.completeAt) : null;
 
     return (
-        <div>
+        <>
         { !searchMode &&
             <div>
                 <div className='uncompleted-entry-panel'>
@@ -55,35 +84,40 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
                             <li
                                 key={entry.id}
                                 className='list-group-item'
+                                data-id={entry.id}
+                                onDoubleClick={() => dblClickHandler(entry.id)}
                             >
                                 <Entry
                                     activeEntryID={activeEntryID}
                                     entry={entry}
                                     onClickStar={clickStar}
                                     onClickSquare={clickSquare}
-                                    onEditEntry={onEditEntry}
-                                    onDelEntry={clickTrash}
-                                    onMenuClick={selectMenuItem}
+                                    onSubmitChange={editEntry}
+                                    onDeleteEntry={deleteEntry}
                                 />
                             </li>)
                         })}
                     </ul>
                 </div>
-                <span onClick = {() => {clickHandler()}}>显示已完成任务</span>
+                <div className='py-2' onClick = {() => {clickHandler()}}>显示已完成任务</div>
                 { showCompleted &&
                     <div className='completed-entry-panel'>
-                        <ul className='list-group'>
+                        <ul className='list-group  list-group-flush'>
                             { completedEntries.length !==0 && completedEntries.map((entry) => {
                                     return (
-                                    <li key={entry.id} className='list-group-item'>
+                                    <li
+                                        key={entry.id}
+                                        className='list-group-item'
+                                        data-id={entry.id}
+                                        onDoubleClick={() => dblClickHandler(entry.id)}
+                                    >
                                         <Entry
                                             activeEntryID={activeEntryID}
                                             entry={entry}
                                             onClickStar={clickStar}
                                             onClickSquare={clickSquare}
-                                            onEditEntry={onEditEntry}
-                                            onDelEntry={clickTrash}
-                                            onMenuClick={selectMenuItem}
+                                            onSubmitChange={editEntry}
+                                            onDeleteEntry={deleteEntry}
                                         />
                                     </li>)
                                 })
@@ -94,22 +128,26 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
             </div>
         }
         { searchMode && 
-            <ul className='list-group search-results'>
+            <ul className='list-group list-group-flush search-results'>
                 { collection.map((item) => {
                     return (
                         <li key={item.id} className='list-group-item'>
                             {item.title}
                             <ul className='list-group'>
                                 { item.entries.map(entry => { return (
-                                    <li key={entry.id} className='list-group-item'>
+                                    <li
+                                        key={entry.id}
+                                        className='list-group-item'
+                                        data-id={entry.id}
+                                        onDoubleClick={() => dblClickHandler(entry.id)}
+                                    >
                                         <Entry
                                             activeEntryID={activeEntryID}
                                             entry={entry}
                                             onClickStar={clickStar}
                                             onClickSquare={clickSquare}
-                                            onEditEntry={onEditEntry}
-                                            onDelEntry={clickTrash}
-                                            onMenuClick={selectMenuItem}
+                                            onSubmitChange={editEntry}
+                                            onDeleteEntry={deleteEntry}
                                         />
                                     </li>
                                     )}
@@ -120,7 +158,7 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
                 })}
             </ul>
         }
-        </div>
+        </>
     )
 };
 

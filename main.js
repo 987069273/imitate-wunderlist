@@ -26,10 +26,10 @@ app.on('ready', () => {
             parent: mainWindow,
             title: 'edit list',
             modal: true, //禁用父窗口
+            autoHideMenuBar: true, //按了alt键之后才可以显示菜单栏
         };
         const editListFileLocation = `file://${path.join(__dirname, './src/Modify/editList.html')}`;
         editListWindow = new AppWindow(editListWindowConfig, editListFileLocation);
-        editListWindow.removeMenu();
         editListWindow.webContents.on('did-finish-load', () => {
             //将获得的旧标题传给渲染进程
             editListWindow.webContents.send('old-title', arg ? arg : '' );
