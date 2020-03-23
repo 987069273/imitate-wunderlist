@@ -1,8 +1,16 @@
-const { app, ipcMain } = require('electron');
+const { app, ipcMain, dialog } = require('electron');
 const isDev = require('electron-is-dev');
 const AppWindow = require('./src/AppWindow');
 const path = require('path');
+const QiniuManager = require('./src/utils/QiniuManager');
 let mainWindow, editListWindow;
+
+const createManager = () => {
+    const accessKey = 'kHVZiWzamFPSsRy0m125y-pOudOSqGIT7hALwpQg';
+    const secretKey = '3TsizFfGqmrFV9QDcl8J9karORRnJroTDgNyNtxe';
+    const bucketName = 'wunderlist';
+    return new QiniuManager(accessKey, secretKey, bucketName);
+}
 
 app.on('ready', () => {
     require('devtron').install();
@@ -43,6 +51,17 @@ app.on('ready', () => {
     ipcMain.on('new-title-created',() => {
         mainWindow.webContents.send('refresh');
     })
+
+    ipcMain.on('upload-file', (event, data) => {
+        console.log('send to cloud')
+        const manager = createManager();
+        manager.uploadFile(data.key, data.path).then(data => {
+            console.log('上传成功', data);
+            mainWindow.webContents.send('file-uploaded');
+        }).catch(() => {
+            dialog.showErrorBox('同步失败','请检查网络是否可用');
+        })
+    });
     
     /* ipcMain.on('message', (event, arg) => {
         console.log(arg);

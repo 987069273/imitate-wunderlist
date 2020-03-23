@@ -13,6 +13,7 @@ import FunctionBar from './components/FunctionBar';
 import CreateItem from './components/CreateItem';
 import EntryPanel from './components/EntryPanel';
 import fileHelper from './utils/fileHelper';
+import useIpcRenderer from './hooks/useIpcRenderer';
 
 const { join } = window.require('path'); 
 const { remote, ipcRenderer } = window.require('electron');
@@ -65,10 +66,21 @@ function App() {
 
   const [state, dispatch] = useReducer(appReducer, initState);
   
-  ipcRenderer.on('refresh',(event, arg) => {
+  const refresh = (event, arg) => {
+    console.log('new list is created');
     initFiles = fileStore.get('files') || [];
     dispatch({type: 'changeFiles', payload: {files: initFiles}})
-  })
+  };
+
+  const file_uploaded = () => {
+    console.log(files);
+    console.log('file is uploaded');
+    remote.dialog.showMessageBox( {
+      type: 'info',
+      title: 'Saved!',
+      message:'保存成功',
+    })
+  };
 
   const { files, searchKeyword, selectedListID, foldersPanelCollapsed } = state;
 
@@ -260,13 +272,16 @@ function App() {
   }
 
   const saveCurrentFile = () => {
-    fileHelper.writeFile(join(savedLocation, 'wunderlist.json'), JSON.stringify(files));
-    remote.dialog.showMessageBox( {
-      type: 'info',
-      title: 'Saved!',
-      message:'保存成功',
-    } );
+    const filePath = join(savedLocation, 'wunderlist.json');
+    fileHelper.writeFile(filePath, JSON.stringify(files)).then(() => {
+      ipcRenderer.send('upload-file',{ key:'wunderlist.json', path: filePath })
+    })
   }
+
+  useIpcRenderer({
+    'refresh' : refresh,
+    'file-uploaded' : file_uploaded,
+  });
 
   return (
     <div className="App container-fluid">
@@ -324,8 +339,8 @@ function App() {
             />
           }
           </div>
-          <button className='bottom w-100 border-0 btn outline shadow-none' onClick={saveCurrentFile}>
-            保存
+          <button className='bottom w-100 border-0 btn outline shadow-none' onClick={() => saveCurrentFile()}>
+            保存至本地和云端
           </button>
         </div>
       </div>
