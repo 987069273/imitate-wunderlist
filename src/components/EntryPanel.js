@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import Entry from './Entry';
 import useContextMenu from '../hooks/useContextMenu';
 import { getParentNode } from '../utils/helper';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnComplete, onStar, onUnStar, onEditEntry, onDelEntry}) => {
     const [ showCompleted, setShowCompleted ] = useState(false);
@@ -127,7 +129,7 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
                 }
             </div>
         }
-        { searchMode && 
+        { searchMode && collection.length !== 0 && 
             <ul className='list-group list-group-flush search-results'>
                 { collection.map((item) => {
                     return (
@@ -157,6 +159,18 @@ const EntryPanel = ({searchMode, selectedListID, collection, onComplete, onUnCom
                     )
                 })}
             </ul>
+        }
+        { searchMode && collection.length === 0 &&
+            <div className='noSearchResult'>
+                <span>
+                <FontAwesomeIcon 
+                    title='搜索'
+                    icon={faSearch}
+                    size='lg'
+                />
+                </span>
+                <span> 无搜索结果</span>
+            </div>
         }
         </>
     )

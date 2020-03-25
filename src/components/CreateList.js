@@ -3,13 +3,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import PropTypes from 'prop-types';
 
-const { ipcRenderer } = window.require('electron');
-
-const CreateList = ({ showAll }) => {
+const CreateList = ({ showAll, createNewList }) => {
 
     const clickHandler = () => {
-        //使用ipcRenderer模块可以向主进程发送信息
-        ipcRenderer.send('open-editList-window');
+        createNewList();
     }
     
     return (

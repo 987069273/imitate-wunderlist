@@ -1,4 +1,4 @@
-import React, { useReducer } from 'react';
+import React, { useReducer/* , useRef */ } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -15,6 +15,7 @@ import EntryPanel from './components/EntryPanel';
 import fileHelper from './utils/fileHelper';
 import useIpcRenderer from './hooks/useIpcRenderer';
 
+
 const { join } = window.require('path'); 
 const { remote, ipcRenderer } = window.require('electron');
 const Store = window.require('electron-store');
@@ -26,7 +27,10 @@ const saveFilesToStore = (files) => {
   fileStore.set('files', files);
 }
 
-let initFiles = fileStore.get('files') || [];
+
+let initFiles = [];
+
+ipcRenderer.send('download-file');
 
 const initState = {
   files: initFiles,
@@ -65,16 +69,29 @@ const appReducer = (state, action) => {
 function App() {
 
   const [state, dispatch] = useReducer(appReducer, initState);
+
+  const download_file = (event, message) => {
+    if (message.status === 'success') {
+      fileHelper.readFile(join(savedLocation, 'wunderlist.json')).then(file => {
+        console.log('file is downloaded');
+        dispatch({type: 'changeFiles', payload: {files: JSON.parse(file)}});
+        saveFilesToStore(JSON.parse(file));
+      })
+    }
+    else if (message.status === 'fail') {
+      fileHelper.readFile(join(savedLocation, 'wunderlist.json')).then(file => {
+        dispatch({type: 'changeFiles', payload: {files: JSON.parse(file)}});
+        saveFilesToStore(JSON.parse(file));
+      })
+    }
+  };
   
   const refresh = (event, arg) => {
-    console.log('new list is created');
     initFiles = fileStore.get('files') || [];
     dispatch({type: 'changeFiles', payload: {files: initFiles}})
   };
 
   const file_uploaded = () => {
-    console.log(files);
-    console.log('file is uploaded');
     remote.dialog.showMessageBox( {
       type: 'info',
       title: 'Saved!',
@@ -109,6 +126,14 @@ function App() {
       return ;
     }
   }).filter(list => list !== undefined);
+
+  const createNewList = () => {
+    ipcRenderer.send('open-editList-window');
+  };
+
+  /* const activeSearch = () => {
+    node.current.focus();
+  } */
 
   const toSearch = (value) => {
     dispatch({ type: 'search', payload: { value: value} });
@@ -171,15 +196,15 @@ function App() {
   };
 
   const unCompleteEntry = (id) => {
-    if( !searchKeyword ) {
+    //if( !searchKeyword ) {
       const entry = sortedList.content.find((entry) => entry.id === id);
       delete entry.completeAt;
-    }
+    /* }
     else {
       const list = searchResult.find(list => list.entries.find( entry => entry.id === id));
       const entry = list.entries.find( entry => id === entry.id );
       delete entry.completeAt;
-    }
+    } */
     dispatch({type: 'changeFiles'});
     saveFilesToStore(files);
   }
@@ -279,14 +304,18 @@ function App() {
   }
 
   useIpcRenderer({
+    'create-new-file': createNewList,
+    'save-edit-file': saveCurrentFile,
+    //'search-entry': activeSearch,
     'refresh' : refresh,
     'file-uploaded' : file_uploaded,
+    'file-downloaded' : download_file,
   });
 
   return (
     <div className="App container-fluid">
       <div className='row'>
-        <div className={foldersPanelCollapsed ? 'col-md-auto bg-light fullHeight pl-2' : 'col-3 bg-light fullHeight pl-2'}>
+        <div className={foldersPanelCollapsed ? 'col-md-auto bg-light vh-100 pl-2' : 'col-3 bg-light vh-100 pl-2'}>
           {/* 此处的格式col-md-auto可以跟随内容进行宽度调整，搭配下面的col使用 */}
           <div className='d-flex my-1'>
             <MenuBars
@@ -295,6 +324,7 @@ function App() {
             />
             <Search
               toShow={!foldersPanelCollapsed}
+              //inputNode={node}
               onSearch={toSearch}
               onCloseSearch={closeSearch}
             />
@@ -310,6 +340,7 @@ function App() {
           />
           <CreateList
             showAll={!foldersPanelCollapsed}
+            createNewList={createNewList}
           />
         </div>
         <div className={foldersPanelCollapsed ? 'col bg-light pl-0 py-1' : 'col-9 bg-light pl-0 py-1'}>

@@ -23,12 +23,12 @@ const FunctionBar = ({ searchMode, title, onSortEntries }) => {
                             onClick={() => {onSortEntries('content')}}
                         />
                     </>
-                } */}
+                }
             <FontAwesomeIcon 
                 title='更多'
                 icon={faEllipsisH}
                 size='lg'
-            />
+            /> */}
             </span>
         </div>
     )

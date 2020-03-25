@@ -1,8 +1,10 @@
-const { app, ipcMain, dialog } = require('electron');
+const { app, ipcMain, dialog, Menu } = require('electron');
 const isDev = require('electron-is-dev');
 const AppWindow = require('./src/AppWindow');
 const path = require('path');
 const QiniuManager = require('./src/utils/QiniuManager');
+const menuTemplate = require('./src/menuTemplate');
+const { join } = require('path'); 
 let mainWindow, editListWindow;
 
 const createManager = () => {
@@ -11,6 +13,23 @@ const createManager = () => {
     const bucketName = 'wunderlist';
     return new QiniuManager(accessKey, secretKey, bucketName);
 }
+
+const savedLocation = app.getPath('documents');
+
+ipcMain.on('download-file', () => {
+    const manager = createManager();
+    manager.getStat('wunderlist.json').then((resp)=> {
+        //这儿的逻辑较为粗暴，默认云端的文件相比本地的更新（若是加上了时间戳等属性，可以进行对比）
+        manager.downloadFile('wunderlist.json', join(savedLocation, 'wunderlist.json')).then(() => {
+            mainWindow.webContents.send('file-downloaded', {status: 'success'});
+        })
+    }, (error) => {
+        if (error.statusCode === 612) {
+            mainWindow.webContents.send('file-downloaded', {status: 'fail'});
+        }
+    });
+});
+
 
 app.on('ready', () => {
     require('devtron').install();
@@ -22,6 +41,10 @@ app.on('ready', () => {
     const urlLocation = isDev ? 'http://localhost:3000' : 'dummyurl';
 
     mainWindow = new AppWindow(mainWindowConfig, urlLocation);
+    // set the menu
+    const menu = Menu.buildFromTemplate(menuTemplate);
+    Menu.setApplicationMenu(menu);
+
     mainWindow.on('closed', () => {
         mainWindow = null;
     })
@@ -53,16 +76,44 @@ app.on('ready', () => {
     })
 
     ipcMain.on('upload-file', (event, data) => {
-        console.log('send to cloud')
         const manager = createManager();
         manager.uploadFile(data.key, data.path).then(data => {
-            console.log('上传成功', data);
             mainWindow.webContents.send('file-uploaded');
         }).catch(() => {
             dialog.showErrorBox('同步失败','请检查网络是否可用');
         })
     });
     
+    /* ipcMain.on('download-file', (event, data) => {
+        dialog.showMessageBox({
+            type: 'info',
+            title: 'to download file',
+            message:'开始下载文件'
+        });
+        const manager = createManager();
+        manager.getStat(data.key).then((resp) => {
+            manager.downloadFile(data.key, data.path).then((file) => {
+                console.log(file);
+                dialog.showMessageBox({      
+                    type: 'info',
+                    title: 'Synced!',
+                    message:'已从云端同步至本地'
+                });
+                mainWindow.webContents.send('file-downloaded', file);
+            })
+        }, (error) => {
+            console.error(error);
+            if ( error.statusCode === 612 ) {
+                console.error('no such file on the cloud.')
+                const savedLocation = join(remote.app.getPath('documents'));
+                let file = [];
+                fileHelper.readFile(savedLocation, 'wunderlist.json').then( value => {
+                    file = JSON.parse(value);
+                });
+                mainWindow.webContents.send('file-downloaded', file);
+            }
+        })
+    }) */
     /* ipcMain.on('message', (event, arg) => {
         console.log(arg);
         event.reply('reply', 'hello from main process');
