@@ -26,27 +26,27 @@ npm run dev
 ### 界面
 分为左右两个界面，右侧可以显示清单内容或搜索结果
 
-![image](https://github.com/987069273/imitate-wunderlist/raw/master/images/界面.png)
+![界面](https://github.com/987069273/imitate-wunderlist/blob/master/images/interface.png)
 
 ### 菜单
 electron的菜单功能
 
-![image](https://github.com/987069273/imitate-wunderlist/raw/master/images/菜单——文件.png)
+![菜单](https://github.com/987069273/imitate-wunderlist/blob/master/images/menu.png)
 
 ### 折叠左侧面板
-![image](https://github.com/987069273/imitate-wunderlist/raw/master/images/折叠左侧面板.jpg)
+![折叠左侧面板](https://github.com/987069273/imitate-wunderlist/blob/master/images/hide%20left%20panel.jpg)
 
 ### 搜索
-![image](https://github.com/987069273/imitate-wunderlist/raw/master/images/搜索结果--“阅读”.jpg)
+![搜索“阅读”的结果](https://github.com/987069273/imitate-wunderlist/blob/master/images/search.jpg)
 
-### 右键显示上下文
-![image](https://github.com/987069273/imitate-wunderlist/raw/master/images/右键显示上下文.png)
+### 右键显示上下文菜单
+![右键显示上下文菜单](https://github.com/987069273/imitate-wunderlist/blob/master/images/context%20menu.png)
 
 ### 新建/编辑清单
 通过弹窗的形式提供新建或编辑清单的入口
 
-![image](https://github.com/987069273/imitate-wunderlist/raw/master/images/弹窗--新建或编辑清单.png)
+![新建/编辑清单的弹窗](https://github.com/987069273/imitate-wunderlist/blob/master/images/create%20or%20edit%20list.png)
 
 ### 保存至本地和云端
 
-![image](https://github.com/987069273/imitate-wunderlist/raw/master/images/成功保存至本地和云端.png)
+![保存文件至本地和云端](https://github.com/987069273/imitate-wunderlist/blob/master/images/saved%20successfully.png)
