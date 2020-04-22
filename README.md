@@ -37,6 +37,7 @@ electron的菜单功能
 ![折叠左侧面板](https://github.com/987069273/imitate-wunderlist/blob/master/images/hide%20left%20panel.jpg)
 
 ### 搜索
+搜索“阅读”的结果
 ![搜索“阅读”的结果](https://github.com/987069273/imitate-wunderlist/blob/master/images/search.jpg)
 
 ### 右键显示上下文菜单
