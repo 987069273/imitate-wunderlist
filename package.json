@@ -19,7 +19,7 @@
     "qiniu": "^7.3.0",
     "react": "^16.13.0",
     "react-dom": "^16.13.0",
-    "react-scripts": "3.4.0",
+    "react-scripts": "5.0.1",
     "use-force-update": "^1.0.7",
     "uuid": "^7.0.2"
   },
